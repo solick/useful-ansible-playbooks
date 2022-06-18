@@ -1,0 +1,55 @@
+---
+- hosts: docker
+
+  vars:
+    test: "test"
+
+  tasks:
+    - name: make sure docker-compose v1 is deinstalled
+      ansible.builtin.file:
+        dest: /usr/local/bin/docker-compose
+        state: absent
+
+    - name: make sure ddocker.txt is deinstalled
+      ansible.builtin.file:
+        path: "/etc/apt/sources.list.d/docker.list"
+        state: absent
+
+    - name: apt update
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Install prerequisites for Docker repository
+      ansible.builtin.apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg2
+          - software-properties-common
+
+    - name: add docker apt key
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: add docker apt repo
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution|lower }} {{ ansible_distribution_release }} stable"
+        state: present
+        update_cache: true
+
+    - name: install docker and it's dependencies
+      ansible.builtin.apt:
+        pkg:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+        state: present
+
+    - name: start and enable docker daemon
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
